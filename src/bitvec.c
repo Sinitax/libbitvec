@@ -73,17 +73,19 @@ bitvec_free(struct bitvec *vec)
 bool
 bitvec_reserve(struct bitvec *vec, size_t cnt)
 {
+	void *alloc;
+
 	LIBBITVEC_ASSERT(vec != NULL);
 
 	cnt = BITCEIL(cnt);
 	if (vec->cap >= cnt) return true;
 
-	vec->data = realloc(vec->data, SLOTCNT(cnt) * SLOT_BYTES);
-	if (!vec->data) {
+	alloc = realloc(vec->data, SLOTCNT(cnt) * SLOT_BYTES);
+	if (!alloc) {
 		LIBBITVEC_HANDLE_ERR("realloc");
 		return false;
 	}
-
+	alloc = vec->data;
 	memset(vec->data + SLOT(vec->cap), 0, SLOT(cnt) - SLOT(vec->cap));
 	vec->cap = cnt;
 
@@ -93,17 +95,18 @@ bitvec_reserve(struct bitvec *vec, size_t cnt)
 bool
 bitvec_shrink(struct bitvec *vec, size_t cnt)
 {
+	void *alloc;
 	LIBBITVEC_ASSERT(vec != NULL);
 
 	cnt = BITCEIL(cnt);
 	if (vec->cap <= cnt) return true;
 
-	vec->data = realloc(vec->data, SLOTCNT(cnt));
-	if (!vec->data) {
+	alloc = realloc(vec->data, SLOTCNT(cnt));
+	if (!alloc) {
 		LIBBITVEC_HANDLE_ERR("realloc");
 		return false;
 	}
-
+	vec->data = alloc;
 	vec->cap = cnt;
 
 	return true;
