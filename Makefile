@@ -4,16 +4,8 @@ LIBDIR ?= /lib
 
 CFLAGS = -I include -Wno-prototype -Wunused-function -Wunused-variable
 
-ifeq "$(LIBBITVEC_DEBUG)" "1"
-CFLAGS += -g
-endif
-
-ifeq "$(LIBBITVEC_ASSERT)" "1"
-CFLAGS += -DLIBBITVEC_ASSERT_ENABLE=1
-endif
-
-ifeq "$(LIBBITVEC_HANDLE_ERR)" "1"
-CFLAGS += -DLIBBITVEC_HANDLE_ERRS=1
+ifeq "$(DEBUG)" "1"
+CFLAGS += -g -DLIBBITVEC_CHECK_ENABLE=1
 endif
 
 all: build/libbitvec.so build/libbitvec.a build/test

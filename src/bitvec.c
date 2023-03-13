@@ -1,30 +1,51 @@
 #include "bitvec.h"
 
+#include <errno.h>
+#include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
-#define SLOT_BYTES sizeof(libbitvec_slot_t)
+#define SLOT_BYTES sizeof(bitvec_slot_t)
 #define SLOT_BITS (SLOT_BYTES * 8)
-#define SLOT_MAX (~(libbitvec_slot_t)0)
+#define SLOT_MAX (~(bitvec_slot_t)0)
 
 #define CEILDIV(n, d) ((n) / (d) + ((n) % (d) == 0 ? 0 : 1))
 #define BITCEIL(n) ((n) + SLOT_BITS - 1 - (SLOT_BITS - 1 + n) % SLOT_BITS)
 
 #define SLOT(n) ((n) / SLOT_BITS)
 #define SLOTCNT(n) CEILDIV(n, SLOT_BITS)
-#define SLOT_BIT(n) (((libbitvec_slot_t)1) << n)
+#define SLOT_BIT(n) (((bitvec_slot_t)1) << n)
 
 #define APPLY_MASK(x,s,m) ((s) ? ((x) | (m)) : ((x) & ~(m)))
 
-bool
+#ifdef LIBBITVEC_CHECK_ENABLE
+#define LIBBITVEC_CHECK(x) libbitvec_assert((x), __FILE__, __LINE__, #x)
+#else
+#define LIBBITVEC_CHECK(x)
+#endif
+
+int libbitvec_errno = 0;
+
+static inline void
+libbitvec_assert(int cond, const char *file, int line, const char *condstr)
+{
+	if (cond) return;
+
+	fprintf(stderr, "libvec: Assertion failed at %s:%i (%s)\n",
+		file, line, condstr);
+	abort();
+}
+
+int
 bitvec_init(struct bitvec *vec, size_t cap)
 {
-	LIBBITVEC_ASSERT(vec != NULL);
+	LIBBITVEC_CHECK(vec != NULL);
 
 	if (cap) {
 		vec->data = calloc(SLOTCNT(cap), SLOT_BYTES);
 		if (!vec->data) {
-			LIBBITVEC_HANDLE_ERR("calloc");
-			return false;
+			libbitvec_errno = errno;
+			return libbitvec_errno;
 		}
 	} else {
 		vec->data = NULL;
@@ -32,13 +53,13 @@ bitvec_init(struct bitvec *vec, size_t cap)
 
 	vec->cap = BITCEIL(cap);
 
-	return true;
+	return 0;
 }
 
 void
 bitvec_deinit(struct bitvec *vec)
 {
-	LIBBITVEC_ASSERT(vec != NULL);
+	LIBBITVEC_CHECK(vec != NULL);
 
 	vec->cap = 0;
 	free(vec->data);
@@ -51,7 +72,7 @@ bitvec_alloc(size_t cap)
 
 	bitvec = malloc(sizeof(struct bitvec));
 	if (!bitvec) {
-		LIBBITVEC_HANDLE_ERR("malloc");
+		libbitvec_errno = errno;
 		return NULL;
 	}
 
@@ -70,52 +91,53 @@ bitvec_free(struct bitvec *vec)
 	free(vec);
 }
 
-bool
+int
 bitvec_reserve(struct bitvec *vec, size_t cnt)
 {
 	void *alloc;
 
-	LIBBITVEC_ASSERT(vec != NULL);
+	LIBBITVEC_CHECK(vec != NULL);
 
 	cnt = BITCEIL(cnt);
 	if (vec->cap >= cnt) return true;
 
 	alloc = realloc(vec->data, SLOTCNT(cnt) * SLOT_BYTES);
 	if (!alloc) {
-		LIBBITVEC_HANDLE_ERR("realloc");
-		return false;
+		libbitvec_errno = errno;
+		return libbitvec_errno;
 	}
 	alloc = vec->data;
 	memset(vec->data + SLOT(vec->cap), 0, SLOT(cnt) - SLOT(vec->cap));
 	vec->cap = cnt;
 
-	return true;
+	return 0;
 }
 
-bool
+int
 bitvec_shrink(struct bitvec *vec, size_t cnt)
 {
 	void *alloc;
-	LIBBITVEC_ASSERT(vec != NULL);
+
+	LIBBITVEC_CHECK(vec != NULL);
 
 	cnt = BITCEIL(cnt);
 	if (vec->cap <= cnt) return true;
 
 	alloc = realloc(vec->data, SLOTCNT(cnt));
 	if (!alloc) {
-		LIBBITVEC_HANDLE_ERR("realloc");
-		return false;
+		libbitvec_errno = errno;
+		return libbitvec_errno;
 	}
 	vec->data = alloc;
 	vec->cap = cnt;
 
-	return true;
+	return 0;
 }
 
 bool
 bitvec_get(struct bitvec *vec, size_t pos)
 {
-	LIBBITVEC_ASSERT(vec != NULL);
+	LIBBITVEC_CHECK(vec != NULL);
 
 	if (pos >= vec->cap) return false;
 	return !!(vec->data[pos / SLOT_BITS] & SLOT_BIT(pos % SLOT_BITS));
@@ -124,7 +146,7 @@ bitvec_get(struct bitvec *vec, size_t pos)
 void
 bitvec_set(struct bitvec *vec, size_t pos)
 {
-	LIBBITVEC_ASSERT(vec != NULL && pos < vec->cap);
+	LIBBITVEC_CHECK(vec != NULL && pos < vec->cap);
 
 	vec->data[pos / SLOT_BITS] |= SLOT_BIT(pos % SLOT_BITS);
 }
@@ -132,7 +154,7 @@ bitvec_set(struct bitvec *vec, size_t pos)
 void
 bitvec_clear(struct bitvec *vec, size_t pos)
 {
-	LIBBITVEC_ASSERT(vec != NULL && pos < vec->cap);
+	LIBBITVEC_CHECK(vec != NULL && pos < vec->cap);
 
 	vec->data[pos / SLOT_BITS] &= ~SLOT_BIT(pos % SLOT_BITS);
 }
@@ -140,10 +162,10 @@ bitvec_clear(struct bitvec *vec, size_t pos)
 void
 bitvec_setn(struct bitvec *vec, size_t start, size_t end, bool set)
 {
-	libbitvec_slot_t mask;
+	bitvec_slot_t mask;
 	size_t starti, endi, i;
 
-	LIBBITVEC_ASSERT(vec != NULL && end >= start && end <= vec->cap);
+	LIBBITVEC_CHECK(vec != NULL && end >= start && end <= vec->cap);
 
 	if (start == end) return;
 

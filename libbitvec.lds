@@ -1,5 +1,7 @@
-LIBBITVEC_1.0 {
+LIBBITVEC_1.1 {
 	global:
+		libbitvec_errno;
+
 		bitvec_init;
 		bitvec_deinit;
 

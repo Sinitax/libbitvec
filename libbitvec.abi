@@ -1,3 +1,5 @@
+libbitvec_errno
+
 bitvec_init
 bitvec_deinit
 

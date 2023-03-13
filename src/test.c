@@ -1,22 +1,28 @@
 #include "bitvec.h"
 
+#include <err.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+#define LIBBITVEC_ERR() errx(1, "test: libbitvec: %s", strerror(libbitvec_errno))
 
 int
 main(int argc, const char **argv)
 {
 	struct bitvec bitvec;
-	int i, *val;
+	int i, ret;
+	int *val;
 
-	bitvec_init(&bitvec, 10);
+	ret = bitvec_init(&bitvec, 10);
+	if (ret) LIBBITVEC_ERR();
 
 	for (i = 1; i < argc; i++) {
 		*val = atoi(argv[i]);
 		if (bitvec_get(&bitvec, *val))
 			printf("%i -> dup!\n", *val);
-		bitvec_reserve(&bitvec, *val);
+		ret = bitvec_reserve(&bitvec, *val);
+		if (ret) LIBBITVEC_ERR();
 		bitvec_set(&bitvec, *val);
 	}
 
@@ -24,7 +30,7 @@ main(int argc, const char **argv)
 		printf("%i", bitvec_get(&bitvec, i));
 	printf("\n");
 
-	printf("bitvec len: %lu\n", bitvec.cap / (8 * sizeof(libbitvec_slot_t)));
+	printf("bitvec len: %lu\n", bitvec.cap / (8 * sizeof(bitvec_slot_t)));
 
 	bitvec_deinit(&bitvec);
 }
