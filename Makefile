@@ -18,7 +18,7 @@ build:
 
 build/libbitvec.a: src/bitvec.c include/bitvec.h | build
 	$(CC) -o build/tmp.o src/bitvec.c $(CFLAGS) -r
-	objcopy --keep-global-symbols=libbitvec.abi build/tmp.o build/fixed.o
+	objcopy --keep-global-symbols=libbitvec.api build/tmp.o build/fixed.o
 	ar rcs $@ build/fixed.o
 
 build/libbitvec.so: src/bitvec.c include/bitvec.h | build
