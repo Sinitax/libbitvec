@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define LIBBITVEC_ERR(rc) errx(1, "libbitvec: %s", strerror(rc))
+#define LIBBITVEC_ERR(rc) errx(1, "libbitvec: %s", rc < 0 ? strerror(-rc) : "???")
 
 int
 main(int argc, const char **argv)

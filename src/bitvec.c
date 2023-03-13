@@ -41,7 +41,7 @@ bitvec_init(struct bitvec *vec, size_t cap)
 
 	if (cap) {
 		vec->data = calloc(SLOTCNT(cap), SLOT_BYTES);
-		if (!vec->data) return errno;
+		if (!vec->data) return -errno;
 	} else {
 		vec->data = NULL;
 	}
@@ -66,7 +66,7 @@ bitvec_alloc(struct bitvec **bitvec, size_t cap)
 	int rc;
 
 	*bitvec = malloc(sizeof(struct bitvec));
-	if (!*bitvec) return errno;
+	if (!*bitvec) return -errno;
 
 	rc = bitvec_init(*bitvec, cap);
 	if (rc) {
@@ -95,7 +95,7 @@ bitvec_reserve(struct bitvec *vec, size_t cnt)
 	if (vec->cap >= cnt) return 0;
 
 	alloc = realloc(vec->data, SLOTCNT(cnt) * SLOT_BYTES);
-	if (!alloc) return errno;
+	if (!alloc) return -errno;
 	alloc = vec->data;
 	memset(vec->data + SLOT(vec->cap), 0, SLOT(cnt) - SLOT(vec->cap));
 	vec->cap = cnt;
@@ -114,7 +114,7 @@ bitvec_shrink(struct bitvec *vec, size_t cnt)
 	if (vec->cap <= cnt) return 0;
 
 	alloc = realloc(vec->data, SLOTCNT(cnt));
-	if (!alloc) return errno;
+	if (!alloc) return -errno;
 	vec->data = alloc;
 	vec->cap = cnt;
 
