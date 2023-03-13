@@ -15,12 +15,10 @@ struct bitvec {
 	bitvec_slot_t *data;
 };
 
-extern int libbitvec_errno;
-
 int bitvec_init(struct bitvec *vec, size_t cap);
 void bitvec_deinit(struct bitvec *vec);
 
-struct bitvec *bitvec_alloc(size_t cap);
+int bitvec_alloc(struct bitvec **vec, size_t cap);
 void bitvec_free(struct bitvec *vec);
 
 int bitvec_reserve(struct bitvec *vec, size_t cnt);

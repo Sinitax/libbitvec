@@ -7,14 +7,14 @@
 
 #define SLOT_BYTES sizeof(bitvec_slot_t)
 #define SLOT_BITS (SLOT_BYTES * 8)
-#define SLOT_MAX (~(bitvec_slot_t)0)
+#define SLOT_MAX (~((bitvec_slot_t) 0))
 
 #define CEILDIV(n, d) ((n) / (d) + ((n) % (d) == 0 ? 0 : 1))
 #define BITCEIL(n) ((n) + SLOT_BITS - 1 - (SLOT_BITS - 1 + n) % SLOT_BITS)
 
 #define SLOT(n) ((n) / SLOT_BITS)
 #define SLOTCNT(n) CEILDIV(n, SLOT_BITS)
-#define SLOT_BIT(n) (((bitvec_slot_t)1) << n)
+#define SLOT_BIT(n) (((bitvec_slot_t) 1) << n)
 
 #define APPLY_MASK(x,s,m) ((s) ? ((x) | (m)) : ((x) & ~(m)))
 
@@ -23,8 +23,6 @@
 #else
 #define LIBBITVEC_CHECK(x)
 #endif
-
-int libbitvec_errno = 0;
 
 static inline void
 libbitvec_assert(int cond, const char *file, int line, const char *condstr)
@@ -43,10 +41,7 @@ bitvec_init(struct bitvec *vec, size_t cap)
 
 	if (cap) {
 		vec->data = calloc(SLOTCNT(cap), SLOT_BYTES);
-		if (!vec->data) {
-			libbitvec_errno = errno;
-			return libbitvec_errno;
-		}
+		if (!vec->data) return errno;
 	} else {
 		vec->data = NULL;
 	}
@@ -65,23 +60,21 @@ bitvec_deinit(struct bitvec *vec)
 	free(vec->data);
 }
 
-struct bitvec *
-bitvec_alloc(size_t cap)
+int
+bitvec_alloc(struct bitvec **bitvec, size_t cap)
 {
-	struct bitvec *bitvec;
+	int rc;
 
-	bitvec = malloc(sizeof(struct bitvec));
-	if (!bitvec) {
-		libbitvec_errno = errno;
-		return NULL;
-	}
+	*bitvec = malloc(sizeof(struct bitvec));
+	if (!*bitvec) return errno;
 
-	if (!bitvec_init(bitvec, cap)) {
+	rc = bitvec_init(*bitvec, cap);
+	if (rc) {
 		free(bitvec);
-		return NULL;
+		return rc;
 	}
 
-	return bitvec;
+	return 0;
 }
 
 void
@@ -99,13 +92,10 @@ bitvec_reserve(struct bitvec *vec, size_t cnt)
 	LIBBITVEC_CHECK(vec != NULL);
 
 	cnt = BITCEIL(cnt);
-	if (vec->cap >= cnt) return true;
+	if (vec->cap >= cnt) return 0;
 
 	alloc = realloc(vec->data, SLOTCNT(cnt) * SLOT_BYTES);
-	if (!alloc) {
-		libbitvec_errno = errno;
-		return libbitvec_errno;
-	}
+	if (!alloc) return errno;
 	alloc = vec->data;
 	memset(vec->data + SLOT(vec->cap), 0, SLOT(cnt) - SLOT(vec->cap));
 	vec->cap = cnt;
@@ -121,13 +111,10 @@ bitvec_shrink(struct bitvec *vec, size_t cnt)
 	LIBBITVEC_CHECK(vec != NULL);
 
 	cnt = BITCEIL(cnt);
-	if (vec->cap <= cnt) return true;
+	if (vec->cap <= cnt) return 0;
 
 	alloc = realloc(vec->data, SLOTCNT(cnt));
-	if (!alloc) {
-		libbitvec_errno = errno;
-		return libbitvec_errno;
-	}
+	if (!alloc) return errno;
 	vec->data = alloc;
 	vec->cap = cnt;
 

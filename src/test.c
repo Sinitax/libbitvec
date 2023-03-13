@@ -5,25 +5,25 @@
 #include <stdio.h>
 #include <string.h>
 
-#define LIBBITVEC_ERR() errx(1, "test: libbitvec: %s", strerror(libbitvec_errno))
+#define LIBBITVEC_ERR(rc) errx(1, "libbitvec: %s", strerror(rc))
 
 int
 main(int argc, const char **argv)
 {
 	struct bitvec bitvec;
-	int i, ret;
-	int *val;
+	int i, rc;
+	int val;
 
-	ret = bitvec_init(&bitvec, 10);
-	if (ret) LIBBITVEC_ERR();
+	rc = bitvec_init(&bitvec, 10);
+	if (rc) LIBBITVEC_ERR(rc);
 
 	for (i = 1; i < argc; i++) {
-		*val = atoi(argv[i]);
-		if (bitvec_get(&bitvec, *val))
-			printf("%i -> dup!\n", *val);
-		ret = bitvec_reserve(&bitvec, *val);
-		if (ret) LIBBITVEC_ERR();
-		bitvec_set(&bitvec, *val);
+		val = atoi(argv[i]);
+		if (bitvec_get(&bitvec, val))
+			printf("%i -> dup!\n", val);
+		rc = bitvec_reserve(&bitvec, val);
+		if (rc) LIBBITVEC_ERR(rc);
+		bitvec_set(&bitvec, val);
 	}
 
 	for (i = 0; i < 10; i++)
